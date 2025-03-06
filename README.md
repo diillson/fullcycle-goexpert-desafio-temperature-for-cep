@@ -117,7 +117,7 @@ Acesse a aplicação:
 # Desenvolvimento
 Estrutura do Projeto
 ```bash
-weather-api/
+fullcycle-goexpert-desafio-temperature-for-cep/
 ├── handlers/        # Handlers HTTP
 ├── services/        # Lógica de negócios
 ├── models/          # Modelos de dados
