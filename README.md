@@ -24,8 +24,8 @@ API RESTful para consulta de temperatura por CEP, que integra o ViaCEP para loca
 
 1. Clone o repositório:
 ```bash
-git clone https://github.com/seu-usuario/weather-api.git
-cd weather-api
+git clone https://github.com/diillson/fullcycle-goexpert-desafio-temperature-for-cep.git
+cd fullcycle-goexpert-desafio-temperature-for-cep
 ```
 
 ## Configure as variáveis de ambiente:
