@@ -12,6 +12,8 @@ API RESTful para consulta de temperatura por CEP, que integra o ViaCEP para loca
 ## URL DA APP NO GOOGLE CLOUD RUN
 
     https://temperature-api-freitas-432475449201.us-central1.run.app
+    ou
+    https://temperature-api-freitas-jd27i4nwsa-uc.a.run.app/
 
 ## Tecnologias Utilizadas
 
