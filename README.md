@@ -112,7 +112,7 @@ Execute o deploy:
 
 Acesse a aplicação:
 
-    gcloud run services describe temperature-api --format='value(status.url)'
+    gcloud run services describe temperature-api-freitas --format='value(status.url)'
 
 # Desenvolvimento
 Estrutura do Projeto
