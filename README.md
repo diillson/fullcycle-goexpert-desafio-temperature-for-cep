@@ -15,14 +15,26 @@ Este projeto implementa um sistema distribuído composto por dois serviços que 
 - Chave de API da [WeatherAPI](https://www.weatherapi.com/)
     
 ## Como executar
-    
-1. Clone o repositório
-2. Configure sua chave da WeatherAPI no arquivo `docker-compose.yml` em `service-b > environment > WEATHER_API_KEY`
-3. Inicie os serviços:
 
+1. Clone o repositório:
+```bash
+       git clone https://github.com/diillson/fullcycle-goexpert-desafio-temperature-for-cep.git
+       cd fullcycle-goexpert-desafio-temperature-for-cep
+```
+2. Mude para a branch com suporte a OpenTelemetry e Zipkin:
+```bash
+git checkout feature/OTEL(Open-Telemetry)-e-Zipkin
+```
+>Nota: Esta branch contém a implementação completa do sistema distribuído com tracing usando OpenTelemetry e Zipkin. 
+
+3. Configure sua chave da WeatherAPI no arquivo `docker-compose.yml` em `service-b > environment > WEATHER_API_KEY`
+4. Inicie os serviços:
+
+```bash
          docker-compose up -d
+```
 
-4. Acesse a aplicação:
+5. Acesse a aplicação:
 
 - Serviço A (entrada): http://localhost:8080
 - Serviço B (direto): http://localhost:8081
