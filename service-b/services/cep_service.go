@@ -1,8 +1,11 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"log"
 	"net/http"
 )
@@ -14,8 +17,13 @@ type ViaCEPResponse struct {
 	Erro       bool   `json:"erro"`
 }
 
-func (s *ViaCEPService) GetCityByCEP(cep string) (string, error) {
+func (s *ViaCEPService) GetCityByCEP(ctx context.Context, cep string) (string, error) {
+	tracer := otel.Tracer("viacep-service")
+	ctx, span := tracer.Start(ctx, "ViaCEP-GetCityByCEP")
+	defer span.End()
+
 	log.Printf("Buscando CEP: %s", cep)
+	span.SetAttributes(attribute.String("cep", cep))
 
 	if len(cep) != 8 {
 		return "", fmt.Errorf("invalid zipcode")
@@ -23,8 +31,16 @@ func (s *ViaCEPService) GetCityByCEP(cep string) (string, error) {
 
 	url := fmt.Sprintf("https://viacep.com.br/ws/%s/json/", cep)
 	log.Printf("Fazendo requisição para: %s", url)
+	span.SetAttributes(attribute.String("url", url))
 
-	resp, err := http.Get(url)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		log.Printf("Erro ao criar requisição: %v", err)
+		return "", err
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("Erro ao fazer requisição: %v", err)
 		return "", err
@@ -48,5 +64,6 @@ func (s *ViaCEPService) GetCityByCEP(cep string) (string, error) {
 	}
 
 	log.Printf("Cidade encontrada: %s", cepResponse.Localidade)
+	span.SetAttributes(attribute.String("city", cepResponse.Localidade))
 	return cepResponse.Localidade, nil
 }

@@ -1,136 +1,100 @@
-# Weather API
+# Sistema de Temperatura por CEP com OpenTelemetry
 
-API RESTful para consulta de temperatura por CEP, que integra o ViaCEP para localização e WeatherAPI para dados meteorológicos.
+Este projeto implementa um sistema distribuído composto por dois serviços que consultam a temperatura de uma cidade a partir de um CEP, com tracing distribuído usando OpenTelemetry e Zipkin.
+    
+## Arquitetura
 
+- **Serviço A**: Recebe o CEP via endpoint POST, valida o formato e encaminha para o Serviço B
+- **Serviço B**: Consulta o CEP via ViaCEP, obtém a cidade e consulta a temperatura via WeatherAPI
+- **OpenTelemetry**: Implementa o tracing distribuído entre os serviços
+- **Zipkin**: Utilizado para visualizar os traces
+    
 ## Requisitos
+    
+- Docker e Docker Compose
+- Chave de API da [WeatherAPI](https://www.weatherapi.com/)
+    
+## Como executar
+    
+1. Clone o repositório
+2. Configure sua chave da WeatherAPI no arquivo `docker-compose.yml` em `service-b > environment > WEATHER_API_KEY`
+3. Inicie os serviços:
 
-- Docker v20.10 ou superior
-- Docker Compose v2.0 ou superior
-- Conta no [WeatherAPI](https://www.weatherapi.com/) (API key gratuita)
-- Conta no Google Cloud Platform (para deploy)
+         docker-compose up -d
 
-## URL DA APP NO GOOGLE CLOUD RUN
+4. Acesse a aplicação:
 
-    https://temperature-api-freitas-432475449201.us-central1.run.app
-    ou
-    https://temperature-api-freitas-jd27i4nwsa-uc.a.run.app/
-
-## Tecnologias Utilizadas
-
-- Go 1.24
-- Gorilla Mux (Router)
-- Docker
-- Google Cloud Run
-
-## Configuração Local
-
-1. Clone o repositório:
-```bash
-git clone https://github.com/diillson/fullcycle-goexpert-desafio-temperature-for-cep.git
-cd fullcycle-goexpert-desafio-temperature-for-cep
-```
-
-## Configure as variáveis de ambiente:
-Crie um arquivo .env na raiz do projeto:
-```
-WEATHER_API_KEY=sua_api_key_aqui
-```
-
-## Execute a aplicação:
-```bash
-docker-compose up --build
-```
-
+- Serviço A (entrada): http://localhost:8080
+- Serviço B (direto): http://localhost:8081
+- Zipkin UI: http://localhost:9411
+    
 ## Endpoints
+    
+### Serviço A
+- **POST /weather**
+- Corpo da requisição: `{ "cep": "12345678" }`
+    
+### Serviço B
+- **GET /weather/{cep}**
+- **POST /weather**
+- Corpo da requisição: `{ "cep": "12345678" }`
 
-GET /weather/{cep}
+## Usando CURL
 
-
-Retorna a temperatura atual para a localidade do CEP informado.
-Parâmetros:
-```
-cep: CEP válido com 8 dígitos (somente números)
-```
-
-# Exemplos de Requisições:
-
-## CEP válido
-curl http://localhost:8080/weather/22450000
-
-## CEP inválido
-curl http://localhost:8080/weather/123
-
-## CEP não encontrado
-curl http://localhost:8080/weather/99999999
-
-Respostas:
-
-### 200 OK: Sucesso
-
-{
-    "temp_C": 25.5,
-    "temp_F": 77.9,
-    "temp_K": 298.65
-}
-
-### 422 Unprocessable Entity: CEP inválido
-
-{
-    "error": "invalid zipcode"
-}
-
-### 404 Not Found: CEP não encontrado
-
-{
-    "error": "can not find zipcode"
-}
-
-# Testes
-
-Execute os testes unitários:
-
-### Local
-go test -v ./...
-
-### Via Docker
-docker-compose run app go test -v ./...
-
-# Deploy no Google Cloud Run
-
-Configure o Google Cloud SDK:
-
-    gcloud init
-    gcloud auth configure-docker
-
-Configure as variáveis de ambiente:
-
-    export PROJECT_ID="seu-projeto-id"
-    export REGION="us-central1"
-    export WEATHER_API_KEY=Sua API KEY
-
-Execute o deploy:
-
-    ./deploy.sh
-
-Acesse a aplicação:
-
-    gcloud run services describe temperature-api-freitas --format='value(status.url)'
-
-# Desenvolvimento
-Estrutura do Projeto
+Para fazer um curl para o Serviço A, você pode usar o seguinte comando:
 ```bash
-fullcycle-goexpert-desafio-temperature-for-cep/
-├── handlers/        # Handlers HTTP
-├── services/        # Lógica de negócios
-├── models/          # Modelos de dados
-├── main.go         # Ponto de entrada
-├── Dockerfile      # Configuração Docker
-├── docker-compose.yml
-├── deploy.sh
-└── README.md
+    curl -X POST http://localhost:8080/weather \
+      -H "Content-Type: application/json" \
+      -d '{"cep": "01001000"}'
 ```
 
-Serviços Utilizados
+Este comando envia uma requisição POST para o endpoint  /weather  do Serviço A, que está rodando na porta 8080. O corpo da requisição é um JSON contendo o CEP a ser consultado.
 
-    ViaCEP: API para consulta de endereços por CEP
-    WeatherAPI: API para dados meteorológicos
+Exemplo com um CEP válido (Zona Sul do Rio de Janeiro):
+```bash
+    curl -X POST http://localhost:8080/weather \
+      -H "Content-Type: application/json" \
+      -d '{"cep": "22450000"}'
+```
+
+Se quiser testar um CEP inválido para ver o tratamento de erro:
+```bash
+    curl -X POST http://localhost:8080/weather \
+      -H "Content-Type: application/json" \
+      -d '{"cep": "123"}'
+```
+
+Você receberá de volta o JSON com os dados de temperatura ou uma mensagem de erro apropriada, dependendo da validade do CEP.
+
+## Visualizando Traces
+    
+Acesse o Zipkin em http://localhost:9411 para visualizar os traces gerados pela aplicação.
+    
+## Estrutura do Projeto
+
+```bash
+.
+├── service-a/           # Implementação do Serviço A
+├── service-b/           # Implementação do Serviço B
+├── docker-compose.yml   # Configuração dos serviços
+└── otel-collector-config.yaml  # Configuração do coletor OpenTelemetry
+```
+
+Esse conjunto de alterações implementa todos os requisitos pedidos:
+
+1. Criado dois serviços separados (A e B)
+2. O Serviço A recebe e valida o CEP através de um endpoint POST
+3. O Serviço B processa a solicitação e retorna a temperatura
+4. Implementamos OpenTelemetry com Zipkin para tracing distribuído
+5. Adicionei spans para monitorar o tempo de resposta das requisições
+6. Configurei docker e docker-compose para execução simplificada
+7. Implementei tratamento de erros conforme solicitado
+
+Para executar o sistema, basta configurar a API key da WeatherAPI no docker-compose.yml e executar  docker-compose up -d .
+
+## Evidencia de funcionamento
+
+### Tracing com Zipkin
+![Tracing com Zipkin](images/zipkin-trace.png)
+
+![Tracing com Zipkin](images/zipkin-trace2.png)
