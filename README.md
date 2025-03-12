@@ -18,8 +18,8 @@ Este projeto implementa um sistema distribuído composto por dois serviços que 
 
 1. Clone o repositório:
 ```bash
-       git clone https://github.com/diillson/fullcycle-goexpert-desafio-temperature-for-cep.git
-       cd fullcycle-goexpert-desafio-temperature-for-cep
+git clone https://github.com/diillson/fullcycle-goexpert-desafio-temperature-for-cep.git
+cd fullcycle-goexpert-desafio-temperature-for-cep
 ```
 2. Mude para a branch com suporte a OpenTelemetry e Zipkin:
 ```bash
@@ -55,25 +55,25 @@ git checkout feature/OTEL(Open-Telemetry)-e-Zipkin
 
 Para fazer um curl para o Serviço A, você pode usar o seguinte comando:
 ```bash
-    curl -X POST http://localhost:8080/weather \
-      -H "Content-Type: application/json" \
-      -d '{"cep": "01001000"}'
+curl -X POST http://localhost:8080/weather \
+  -H "Content-Type: application/json" \
+  -d '{"cep": "01001000"}'
 ```
 
 Este comando envia uma requisição POST para o endpoint  /weather  do Serviço A, que está rodando na porta 8080. O corpo da requisição é um JSON contendo o CEP a ser consultado.
 
 Exemplo com um CEP válido (Zona Sul do Rio de Janeiro):
 ```bash
-    curl -X POST http://localhost:8080/weather \
-      -H "Content-Type: application/json" \
-      -d '{"cep": "22450000"}'
+curl -X POST http://localhost:8080/weather \
+  -H "Content-Type: application/json" \
+  -d '{"cep": "22450000"}'
 ```
 
 Se quiser testar um CEP inválido para ver o tratamento de erro:
 ```bash
-    curl -X POST http://localhost:8080/weather \
-      -H "Content-Type: application/json" \
-      -d '{"cep": "123"}'
+curl -X POST http://localhost:8080/weather \
+  -H "Content-Type: application/json" \
+  -d '{"cep": "123"}'
 ```
 
 Você receberá de volta o JSON com os dados de temperatura ou uma mensagem de erro apropriada, dependendo da validade do CEP.
