@@ -1,9 +1,12 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"fullcycle-goexpert-desafio-temperature-for-cep/models"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"log"
 	"net/http"
 	"net/url"
@@ -21,7 +24,13 @@ type WeatherAPIResponse struct {
 	} `json:"error,omitempty"`
 }
 
-func (s *WeatherAPIService) GetTemperature(city string) (*models.Temperature, error) {
+func (s *WeatherAPIService) GetTemperature(ctx context.Context, city string) (*models.Temperature, error) {
+	tracer := otel.Tracer("weather-api-service")
+	ctx, span := tracer.Start(ctx, "WeatherAPI-GetTemperature")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("city", city))
+
 	apiKey := os.Getenv("WEATHER_API_KEY")
 	if apiKey == "" {
 		log.Printf("WEATHER_API_KEY não configurada")
@@ -29,9 +38,18 @@ func (s *WeatherAPIService) GetTemperature(city string) (*models.Temperature, er
 	}
 
 	encodedCity := url.QueryEscape(city)
-	url := fmt.Sprintf("https://api.weatherapi.com/v1/current.json?key=%s&q=%s", apiKey, encodedCity)
+	reqUrl := fmt.Sprintf("https://api.weatherapi.com/v1/current.json?key=%s&q=%s", apiKey, encodedCity)
 
-	resp, err := http.Get(url)
+	span.SetAttributes(attribute.String("url", "https://api.weatherapi.com/v1/current.json"))
+
+	req, err := http.NewRequestWithContext(ctx, "GET", reqUrl, nil)
+	if err != nil {
+		log.Printf("Erro ao criar requisição para WeatherAPI: %v", err)
+		return nil, err
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("Erro ao fazer requisição para WeatherAPI: %v", err)
 		return nil, err
@@ -52,6 +70,12 @@ func (s *WeatherAPIService) GetTemperature(city string) (*models.Temperature, er
 	tempC := weatherResp.Current.TempC
 	tempF := tempC*1.8 + 32
 	tempK := tempC + 273.15
+
+	span.SetAttributes(
+		attribute.Float64("temp_c", tempC),
+		attribute.Float64("temp_f", tempF),
+		attribute.Float64("temp_k", tempK),
+	)
 
 	return &models.Temperature{
 		TempC: round(tempC, 2),
