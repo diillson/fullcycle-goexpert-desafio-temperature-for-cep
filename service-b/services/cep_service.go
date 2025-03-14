@@ -6,16 +6,13 @@ import (
 	"fmt"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 )
 
 type ViaCEPService struct{}
-
-type ViaCEPResponse struct {
-	Localidade string `json:"localidade"`
-	Erro       bool   `json:"erro"`
-}
 
 func (s *ViaCEPService) GetCityByCEP(ctx context.Context, cep string) (string, error) {
 	tracer := otel.Tracer("viacep-service")
@@ -52,18 +49,37 @@ func (s *ViaCEPService) GetCityByCEP(ctx context.Context, cep string) (string, e
 		return "", fmt.Errorf("can not find zipcode")
 	}
 
-	var cepResponse ViaCEPResponse
-	if err := json.NewDecoder(resp.Body).Decode(&cepResponse); err != nil {
-		log.Printf("Erro ao decodificar resposta: %v", err)
-		return "", err
+	// Ler o corpo da resposta como texto
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Erro ao ler corpo da resposta: %v", err)
+		return "", fmt.Errorf("internal server error")
 	}
 
-	if cepResponse.Erro || cepResponse.Localidade == "" {
-		log.Printf("CEP não encontrado ou resposta inválida")
+	bodyString := string(bodyBytes)
+	log.Printf("Resposta da API ViaCEP: %s", bodyString)
+
+	// Verificar se a resposta indica um erro
+	if strings.Contains(bodyString, "\"erro\"") || strings.Contains(bodyString, "\"erro\":true") {
+		log.Printf("CEP não encontrado: resposta indica erro")
 		return "", fmt.Errorf("can not find zipcode")
 	}
 
-	log.Printf("Cidade encontrada: %s", cepResponse.Localidade)
-	span.SetAttributes(attribute.String("city", cepResponse.Localidade))
-	return cepResponse.Localidade, nil
+	// Usar um mapa genérico para decodificar a resposta
+	var responseMap map[string]interface{}
+	if err := json.Unmarshal(bodyBytes, &responseMap); err != nil {
+		log.Printf("Erro ao decodificar resposta JSON: %v", err)
+		return "", fmt.Errorf("internal server error")
+	}
+
+	// Verificar se o campo localidade existe e é uma string válida
+	localidade, ok := responseMap["localidade"].(string)
+	if !ok || localidade == "" {
+		log.Printf("CEP sem localidade ou com localidade inválida")
+		return "", fmt.Errorf("can not find zipcode")
+	}
+
+	log.Printf("Cidade encontrada: %s", localidade)
+	span.SetAttributes(attribute.String("city", localidade))
+	return localidade, nil
 }
